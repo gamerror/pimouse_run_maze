@@ -1,7 +1,7 @@
 #!/bin/bash -xve
 
 #ワークスペースにリポジトリをコピー
-rsync -av ./ ~/catkin_ws/src/pimouse_run_corridor/
+rsync -av ./ ~/catkin_ws/src/pimouse_run_maze/
 
 #pimouse_rosをgit cloneでワークスペースに持ってくる
 cd ~/catkin_ws/src/

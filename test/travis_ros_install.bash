@@ -5,6 +5,7 @@ sudo pip install catkin_pkg
 sudo pip install empy
 sudo pip install pyyaml
 sudo pip install rospkg
+sudo pip install ptvsd
 
 #ros install
 cd ..
