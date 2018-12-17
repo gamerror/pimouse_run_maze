@@ -8,13 +8,16 @@
 
 import rospy,copy,math
 import ptvsd
+import time
 from geometry_msgs.msg import Twist
 from std_srvs.srv import Trigger, TriggerResponse
 from pimouse_ros.msg import LightSensorValues
+from pimouse_ros.srv import TimedMotion
 
 class MazeTrace():
     def __init__(self):
         self.cmd_vel = rospy.Publisher('/cmd_vel',Twist,queue_size=1)
+        self.timed_motion = rospy.ServiceProxy('/timed_motion', TimedMotion)
 
         self.sensor_values = LightSensorValues()
         rospy.Subscriber('/lightsensors', LightSensorValues, self.callback_lightsensors)
@@ -22,25 +25,31 @@ class MazeTrace():
     def callback_lightsensors(self,messages):
         self.sensor_values = messages
 
+    def turn(self,turn_deg):
+        if turn_deg >= 0:
+            hz = 400
+        else:
+            hz = -400
+        duration = 2222 * turn_deg / hz         # 400 pulse = 90 degree
+        self.timed_motion(hz,-hz,duration)
+                                                
     def run(self):
         rate = rospy.Rate(20)
         data = Twist()
 
         # motion parameter
         accel = 0.02
-        decel = 0.02
+        decel = 0.04
         vel_max = 0.4
-        vel_min = 0.1
-        th_slowdown = 100       # threshold of forward sensor to slow down
-        th_stop = 2000          # threshold of forward sensor to stop immediately
+        vel_min = 0.2
+        th_slowdown = 500       # threshold of forward sensor to slow down
+        th_stop = 1000          # threshold of forward sensor to stop immediately
         th_ignore = 200         # threshold of ignorant side sensor
 
         data.linear.x = 0.0
         data.angular.z = 0
         while not rospy.is_shutdown():
             s = self.sensor_values
-            print(s.left_side, s.left_forward, s.right_forward, s.right_side, s.sum_forward)
-
             data.linear.x += accel
             data.angular.z = 0.0
 
@@ -67,7 +76,6 @@ class MazeTrace():
             else:
                 error = (s.right_side - s.left_side)/50.0
                 data.angular.z = error * 2 * math.pi / 180.0
-                print("steering: ", data.angular.z)
 
             self.cmd_vel.publish(data)
             rate.sleep()
@@ -83,8 +91,17 @@ if __name__ == '__main__':
 
     rospy.wait_for_service('/motor_on')
     rospy.wait_for_service('/motor_off')
+    rospy.wait_for_service('/timed_motion')
     rospy.on_shutdown(rospy.ServiceProxy('/motor_off',Trigger).call)
     rospy.ServiceProxy('/motor_on',Trigger).call()
 
     maze = MazeTrace()
-    maze.run()
+    #maze.run()
+    maze.turn(-90)      # Turn left
+    time.sleep(1)
+    maze.turn(90)       # Turn right
+    time.sleep(1)
+    maze.turn(180)      # Right-about-face
+    time.sleep(1)
+    maze.turn(-180)     # Left-about-face
+                            
