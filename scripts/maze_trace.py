@@ -34,6 +34,7 @@ class MazeTrace():
         th_slowdown = 100       # threshold of forward sensor to slow down
         th_stop = 2000          # threshold of forward sensor to stop immediately
         th_ignore = 200         # threshold of ignorant side sensor
+        steering = 50.0         # Sterring response
 
         data.linear.x = 0.0
         data.angular.z = 0
@@ -65,7 +66,7 @@ class MazeTrace():
             elif s.left_side < th_ignore or s.right_side < th_ignore:
                 data.angular.z = 0.0
             else:
-                error = (s.right_side - s.left_side)/50.0
+                error = (s.right_side - s.left_side) / steering
                 data.angular.z = error * 2 * math.pi / 180.0
                 print("steering: ", data.angular.z)
 
