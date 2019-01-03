@@ -16,6 +16,10 @@ class MazeExplore():
         self.sensor_values = LightSensorValues()
         rospy.Subscriber('/lightsensors', LightSensorValues, self.callback_lightsensors)
 
+        self.move_correct = 1.000       # Correction distance of movement
+        self.turn_left_correct = 0.910  # Correction angle of turn left
+        self.turn_right_correct = 0.910 # Correction angle of turn right
+
         self.intensity_slowdown = 100   # threshold of forward sensor to slow down
         self.intensity_stop = 4000      # Sensor intensity sum_forward of positioning
         self.intensity_exist_side = 200 # Sensor intensity of side to detect side wall
@@ -29,6 +33,24 @@ class MazeExplore():
         #print comment, s.left_side, s.left_forward, s.right_forward, s.right_side, ' : ', s.sum_forward, s.sum_all
         pass        # Do none.
         
+    def move(self, dist_mm, vel_mmsec):
+        dist_mm *= self.move_correct
+        if dist_mm < 0:
+            vel_mmsec = -abs(vel_mmsec)
+        vel_hz = 2.82942121052 * vel_mmsec      # 400 / (45 * pi) [pulse/mm]
+        duration = 1000 * dist_mm / vel_mmsec
+        self.timed_motion(vel_hz, vel_hz, duration)
+
+    def turn(self, turn_deg, vel_degsec):
+        if turn_deg >= 0:       # 200 pulse = 90 degree
+            hz = 2.222222 * vel_degsec
+            turn_deg = turn_deg * self.turn_right_correct
+        else:
+            hz = -2.222222 * vel_degsec
+            turn_deg = turn_deg * self.turn_left_correct
+        duration = 1000 * abs(turn_deg) / vel_degsec
+        self.timed_motion(hz, -hz, duration)        
+
     def run(self):
         # motion parameter
         rate_normal = 10    # Normal sampling rate [Hz]
@@ -107,4 +129,15 @@ if __name__ == '__main__':
     
     maze = MazeExplore()
     time.sleep(1)
-    maze.run()
+    #maze.run()
+    maze.move(50, 100)
+    time.sleep(1)
+    maze.turn(-90, 120)         # Turn left
+    time.sleep(1)
+    maze.turn(90, 120)          # Turn right
+    time.sleep(1)
+    maze.turn(180, 120)         # Right-about-face
+    time.sleep(1)
+    maze.turn(-180, 120)        # Left-about-face
+    time.sleep(1)
+    maze.move(-50, 100)

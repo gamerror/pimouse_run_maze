@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find pimouse_ros)/launch/pimouse.launch" /> 
+  <node pkg="pimouse_run_maze" name="maze_explore" type="maze_explore.py" required="true" />
+  <test test-name="test_maze_explore" pkg="pimouse_run_maze" type="travis_test_maze_explore.py" />
+</launch>
