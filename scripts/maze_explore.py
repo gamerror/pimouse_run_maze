@@ -17,15 +17,17 @@ class MazeExplore():
         rospy.Subscriber('/lightsensors', LightSensorValues, self.callback_lightsensors)
 
         self.setback = 19.0             # Setback distance of front nose from front wall to center of block [mm]
-        self.sidewall_center = 40.0     # Distance to center of side wall for trun [mm]
-        self.move_correct = 1.000       # Correction distance of movement
-        self.slow_velocity = 50         # Velocity of positioning [mm/sec]
+        self.sidewall_center = 30.0     # Distance to center of side wall for trun [mm]
+        self.move_delay = 0.05          # Delay of movement feedback [sec]
+        self.move_correct = 0.970       # Correction distance of movement
+        self.slow_velocity = 25         # Velocity of positioning [mm/sec]
         self.interval_time = 0.5        # Interval time between movement [sec]
 
-        self.turn_velocity = 150        # Angular velocity of turn [deg/sec]
-        self.turn_slow_velocity = 45    # Angular velocity of positioning [deg/sec]
-        self.turn_left_correct = 0.910  # Correction angle of turn left
-        self.turn_right_correct = 0.910 # Correction angle of turn right
+        self.turn_velocity = 120        # Angular velocity of turn [deg/sec]
+        self.turn_slow_velocity = 20    # Angular velocity of positioning [deg/sec]
+        self.turn_delay = 0.050         # Delay of turn feedback [sec]
+        self.turn_left_correct = 0.950  # Correction angle of turn left
+        self.turn_right_correct = 0.950 # Correction angle of turn right
         self.turn_slow_correct = 1.00   # Correction angle of positioning
         self.turn_dir = True            # Alternate turn
 
@@ -56,24 +58,24 @@ class MazeExplore():
         sensor_stop_front_target = self.sensor_values
 
         self.intensity_per_mm = (sensor_stop_previos_point.sum_forward - sensor_stop_front_target.sum_forward) / (0.25 * self.setback)
-        self.ratio_faced_front = float(sensor_stop_front_target.left_side) / float(sensor_stop_front_target.right_side)
+        self.ratio_faced_front = float(sensor_stop_front_target.left_forward) / float(sensor_stop_front_target.right_forward)
 
-        # Turn left by 5 deg from front.
-        calib_divert_angle = 5.0
+        # Divert left from front.
+        calib_divert_angle = 10.0
         self.turn(-calib_divert_angle, self.turn_velocity)
         rospy.sleep(self.interval_time)
         sensor_divert_left = self.sensor_values
         self.show_lightsensors('sensor_divert_left: ', sensor_divert_left)
-        self.ratio_per_deg_faced_left = float(sensor_divert_left.left_side) / float(sensor_divert_left.right_side)
+        self.ratio_per_deg_faced_left = float(sensor_divert_left.left_forward) / float(sensor_divert_left.right_forward)
         self.ratio_per_deg_faced_left -= self.ratio_faced_front
         self.ratio_per_deg_faced_left  /= -calib_divert_angle
 
-        # Turn right by 10 deg from front.
+        # Divert right from front.
         self.turn(calib_divert_angle * 2, self.turn_velocity)
         rospy.sleep(self.interval_time)
         sensor_divert_right = self.sensor_values
         self.show_lightsensors('sensor_divert_right: ', sensor_divert_right)
-        self.ratio_per_deg_faced_right = float(sensor_divert_right.left_side) / float(sensor_divert_right.right_side)
+        self.ratio_per_deg_faced_right = float(sensor_divert_right.left_forward) / float(sensor_divert_right.right_forward)
         self.ratio_per_deg_faced_right -= self.ratio_faced_front
         self.ratio_per_deg_faced_right  /= calib_divert_angle
         
@@ -98,7 +100,7 @@ class MazeExplore():
         if dist_mm < 0:
             vel_mmsec = -abs(vel_mmsec)
         vel_hz = 2.82942121052 * vel_mmsec      # 400 / (45 * pi) [pulse/mm]
-        duration = 1000 * dist_mm / vel_mmsec
+        duration = 1000 * max(dist_mm / vel_mmsec + self.move_delay, 0)
         self.timed_motion(vel_hz, vel_hz, duration)
 
     def turn(self, turn_deg, vel_degsec):
@@ -108,7 +110,7 @@ class MazeExplore():
         else:
             hz = -2.222222 * vel_degsec
             turn_deg = turn_deg * self.turn_left_correct
-        duration = 1000 * abs(turn_deg) / vel_degsec
+        duration = 1000 * max(abs(turn_deg) / vel_degsec + self.turn_delay, 0)
         self.timed_motion(hz, -hz, duration)        
 
     def positioning(self):
@@ -136,7 +138,7 @@ class MazeExplore():
             rospy.sleep(self.interval_time)
             s = self.sensor_values
             #self.show_lightsensors('dir: ', s)
-            ratio_divert = float(s.left_side) / float(s.right_side) - self.ratio_faced_front
+            ratio_divert = float(s.left_forward) / float(s.right_forward) - self.ratio_faced_front
             if (ratio_divert < tolerance) and (ratio_divert > -tolerance):
                 print 'Succeeded direction adjustment.'
                 result = True
@@ -155,7 +157,7 @@ class MazeExplore():
         rate_normal = 10    # Normal sampling rate [Hz]
         rate_fine = 20      # Fine sampling rate for positioning [Hz]
         accel = 40          # Acceleration
-        decel = 60          # Deceleration
+        decel = 80          # Deceleration
         vel_max = 400       # Maximum velocity [mm/sec]
         vel_min = 100       # Minimum velocity [mm/sec]
 

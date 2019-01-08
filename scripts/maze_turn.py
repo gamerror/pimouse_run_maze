@@ -16,9 +16,11 @@ class MazeExplore():
         self.sensor_values = LightSensorValues()
         rospy.Subscriber('/lightsensors', LightSensorValues, self.callback_lightsensors)
 
-        self.move_correct = 1.000       # Correction distance of movement
-        self.turn_left_correct = 0.910  # Correction angle of turn left
-        self.turn_right_correct = 0.910 # Correction angle of turn right
+        self.move_delay = 0.05          # Delay of movement feedback [sec]
+        self.move_correct = 0.970       # Correction distance of movement
+        self.turn_delay = 0.050         # Delay of turn feedback [sec]
+        self.turn_left_correct = 0.970  # Correction angle of turn left
+        self.turn_right_correct = 0.960 # Correction angle of turn right
 
         self.intensity_slowdown = 100   # threshold of forward sensor to slow down
         self.intensity_stop = 4000      # Sensor intensity sum_forward of positioning
@@ -38,7 +40,7 @@ class MazeExplore():
         if dist_mm < 0:
             vel_mmsec = -abs(vel_mmsec)
         vel_hz = 2.82942121052 * vel_mmsec      # 400 / (45 * pi) [pulse/mm]
-        duration = 1000 * dist_mm / vel_mmsec
+        duration = 1000 * max(dist_mm / vel_mmsec + self.move_delay, 0)
         self.timed_motion(vel_hz, vel_hz, duration)
 
     def turn(self, turn_deg, vel_degsec):
@@ -48,7 +50,7 @@ class MazeExplore():
         else:
             hz = -2.222222 * vel_degsec
             turn_deg = turn_deg * self.turn_left_correct
-        duration = 1000 * abs(turn_deg) / vel_degsec
+        duration = 1000 * max(abs(turn_deg) / vel_degsec + self.turn_delay, 0)
         self.timed_motion(hz, -hz, duration)        
 
     def run(self):
