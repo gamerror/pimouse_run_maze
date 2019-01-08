@@ -19,15 +19,15 @@ class MazeExplore():
         self.setback = 19.0             # Setback distance of front nose from front wall to center of block [mm]
         self.sidewall_center = 30.0     # Distance to center of side wall for trun [mm]
         self.move_delay = 0.05          # Delay of movement feedback [sec]
-        self.move_correct = 0.970       # Correction distance of movement
-        self.slow_velocity = 25         # Velocity of positioning [mm/sec]
+        self.move_correct = 0.950       # Correction distance of movement
+        self.slow_velocity = 50         # Velocity of positioning [mm/sec]
         self.interval_time = 0.5        # Interval time between movement [sec]
 
         self.turn_velocity = 120        # Angular velocity of turn [deg/sec]
         self.turn_slow_velocity = 20    # Angular velocity of positioning [deg/sec]
         self.turn_delay = 0.050         # Delay of turn feedback [sec]
-        self.turn_left_correct = 0.950  # Correction angle of turn left
-        self.turn_right_correct = 0.950 # Correction angle of turn right
+        self.turn_left_correct = 0.920  # Correction angle of turn left
+        self.turn_right_correct = 0.920 # Correction angle of turn right
         self.turn_slow_correct = 1.00   # Correction angle of positioning
         self.turn_dir = True            # Alternate turn
 
